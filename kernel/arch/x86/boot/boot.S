@@ -15,6 +15,7 @@ global _start
 extern kernel_main
 extern __bss_start
 extern __bss_end
+extern serial_init
 
 COREOS_BOOT_MAGIC equ 0xC0950095
 BOOT_INFO_ADDR    equ 0x9000
@@ -43,6 +44,13 @@ _start:
 .skip_boot_info_clear:
     mov esp, stack_top
     and esp, 0xfffffff0
+    call serial_init
+    ; Debug: signal kernel is running
+    mov dx, 0x3F8
+    mov al, 'K'
+    out dx, al
+    mov al, 'E'
+    out dx, al
     push BOOT_INFO_ADDR
     push COREOS_BOOT_MAGIC
     mov eax, kernel_main

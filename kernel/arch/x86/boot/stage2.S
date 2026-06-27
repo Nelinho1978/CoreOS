@@ -8,7 +8,7 @@
 org 0x7E00
 
 KERNEL_LOAD_SEG   equ 0x1000
-KERNEL_SECTORS    equ 96
+KERNEL_SECTORS    equ 200
 KERNEL_START_LBA  equ 9
 STAGE2_SECTORS    equ 8
 CODE_SEG          equ 8
@@ -24,6 +24,32 @@ VBE_INFO_BUF      equ 0x5000
 MODE_INFO_BUF     equ 0x6000
 BOOT_INFO_ADDR    equ 0x9000
 
+; serial_putc: write AL to COM1 (no LSR check, for QEMU speed)
+serial_putc:
+    push dx
+    mov dx, 0x3F8
+    out dx, al
+    pop dx
+    ret
+
+; debug_print: print null-terminated string at CS:SI to COM1
+debug_print:
+    push ax
+    push si
+    push dx
+    mov dx, 0x3F8
+.loop:
+    lodsb
+    test al, al
+    jz .done
+    out dx, al
+    jmp .loop
+.done:
+    pop dx
+    pop si
+    pop ax
+    ret
+
 stage2:
     xor ax, ax
     mov ds, ax
@@ -31,43 +57,37 @@ stage2:
     mov ss, ax
     mov sp, 0x9000
     mov [boot_drive], dl
+
+    ; RAW OUT test (no function calls - like 'U!' test)
+    mov dx, 0x3F8
+    mov al, '1'
+    out dx, al
+
     mov ah, 0x00
     mov dl, [boot_drive]
     int 0x13
 
+    mov dx, 0x3F8
+    mov al, '2'
+    out dx, al
+
     call enable_a20
 
-    call vesa_scan_modes
+    mov dx, 0x3F8
+    mov al, '3'
+    out dx, al
 
-    ; --- InicializarVideo() via VBE BIOS — prioridade 800x600 ---
-    mov cx, 0x116
-    call vesa_try_one
-    jnc .video_ok
-    mov cx, 0x115
-    call vesa_try_one
-    jnc .video_ok
-    mov cx, 0x114
-    call vesa_try_one
-    jnc .video_ok
-    mov cx, 0x103
-    call vesa_try_one
-    jnc .video_ok
-    mov cx, 0x118
-    call vesa_try_one
-    jnc .video_ok
-    mov cx, 0x101
-    call vesa_try_one
-    jnc .video_ok
+    ; BYPASS VESA — go straight to VGA mode 0x13 + kernel load
     jmp vga13_fallback
 
 .video_ok:
     call vesa_finalize_display
-    ; --- CarregarKernel() ---
-    call load_kernel_image
-    jc load_error
-    jmp enter_protected
+    jmp load_kernel_and_boot
 
 vga13_fallback:
+    mov dx, 0x3F8
+    mov al, 'V'
+    out dx, al
     mov ax, 0x0013
     int 0x10
     mov ax, BOOT_INFO_ADDR >> 4
@@ -81,15 +101,26 @@ vga13_fallback:
     mov dword [es:di + 20], 0xA0000
     mov word [selected_vbe_mode], 0x013
     call vesa_fallback_display
+
+load_kernel_and_boot:
+    mov dx, 0x3F8
+    mov al, 'K'
+    out dx, al
     call load_kernel_image
-    jc load_error
-    jmp enter_protected
+    mov dx, 0x3F8
+    mov al, 'L'
+    out dx, al
+    jnc enter_protected
+    mov dx, 0x3F8
+    mov al, 'F'
+    out dx, al
+    jmp load_error
 
 enter_protected:
-    mov si, msg_ok
-    call print16
+    mov al, 'P'       ; marker: entering protected mode
+    call serial_putc
     cli
-    ; VBE BIOS pode corromper a GDT no fim do stage2 — regravar entradas
+    ; Re-write GDT in case VBE BIOS corrupted it
     xor eax, eax
     mov [gdt + 0], eax
     mov [gdt + 4], eax
@@ -375,7 +406,6 @@ cur_lba    dw 0
 head       db 0
 sect       db 0
 selected_vbe_mode dw 0
-msg_ok  db "Kernel OK", 13, 10, 0
 msg_err db "ERRO kernel", 13, 10, 0
 
 align 8
