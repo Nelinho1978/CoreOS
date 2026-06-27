@@ -1,4 +1,5 @@
 #include "subsys/win32_stubs.h"
+#include "ntos/ldr.h"
 #include "coreos/printk.h"
 #include "string.h"
 

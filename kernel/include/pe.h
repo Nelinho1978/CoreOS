@@ -63,6 +63,12 @@ typedef struct _IMAGE_FILE_HEADER {
 #define IMAGE_NT_OPTIONAL_HDR32_MAGIC 0x010B
 #define IMAGE_NT_OPTIONAL_HDR64_MAGIC 0x020B
 
+/* --- Data Directory --- */
+typedef struct _IMAGE_DATA_DIRECTORY {
+    uint32_t VirtualAddress;
+    uint32_t Size;
+} __attribute__((packed)) IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
+
 /* --- Optional Header (32-bit) --- */
 typedef struct _IMAGE_OPTIONAL_HEADER32 {
     uint16_t Magic;
@@ -99,10 +105,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER32 {
     uint32_t NumberOfRvaAndSizes;
 
     /* Data directories */
-    struct {
-        uint32_t VirtualAddress;
-        uint32_t Size;
-    } DataDirectory[16];
+    IMAGE_DATA_DIRECTORY DataDirectory[16];
 } __attribute__((packed)) IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 
 /* --- NT Headers (32-bit) --- */

@@ -5,6 +5,8 @@
 #include "ntos/ntoskrnl.h"
 #include "coreos/printk.h"
 #include "coreos/drivers_hw.h"
+#include "ntos/ldr.h"
+#include "subsys/win32_stubs.h"
 #include "arch/irq.h"
 
 void criar_memoria_virtual(uint32_t boot_magic, void *boot_info) {
@@ -34,6 +36,8 @@ void criar_processos(void) {
     CmInitSystem();
     ExInitSystem();
     PspInitSystem();
+    LdrInitSystem();
+    Win32StubsInit();
     KePhase1Init();
 }
 
@@ -45,6 +49,12 @@ void mostrar_tela(void) {
         kputs("[Kernel] ERRO: video nao disponivel\n");
         return;
     }
+
+    LdrLoadDll(NULL, "ntdll.dll");
+    LdrLoadDll(NULL, "kernel32.dll");
+    LdrLoadDll(NULL, "user32.dll");
+    LdrLoadDll(NULL, "gdi32.dll");
+
     desktop_run();
 }
 

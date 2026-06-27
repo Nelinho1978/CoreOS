@@ -9,7 +9,7 @@ BUILD=build/x86
 
 # Limpar build anterior (evita misturar objetos MinGW COFF com ELF)
 rm -rf "$BUILD"
-mkdir -p "$BUILD"/{src/core,src/gui,src/gfx,src/hal,src/ntos/{ke,ex,ob,io,mm,ps,se,cm},src/subsys/win32,arch/x86/{boot,video,cpu,time,ke,drivers,input,mm,mem,bus,io,usb}}
+mkdir -p "$BUILD"/{src/core,src/gui,src/gfx,src/hal,src/ntos/{ke,ex,ob,io,mm,ps,se,cm,ldr},src/subsys/win32,arch/x86/{boot,video,cpu,time,ke,drivers,input,mm,mem,bus,io,usb}}
 
 # Localizar toolchain i686-elf
 TOOLCHAIN_BIN=""
@@ -94,7 +94,10 @@ compile_c src/ntos/mm/mminit.c
 compile_c src/ntos/ps/psinit.c
 compile_c src/ntos/se/seinit.c
 compile_c src/ntos/cm/cminit.c
+compile_c src/ntos/ldr/pe_load.c
+compile_c src/ntos/ldr/ldr.c
 compile_c src/subsys/win32/win32k.c
+compile_c src/subsys/win32/stubs.c
 compile_c arch/x86/hal.c
 compile_c arch/x86/video/vga.c
 compile_c arch/x86/video/svga.c
@@ -162,7 +165,10 @@ OBJS=(
   "$BUILD/src/ntos/ps/psinit.o"
   "$BUILD/src/ntos/se/seinit.o"
   "$BUILD/src/ntos/cm/cminit.o"
+  "$BUILD/src/ntos/ldr/pe_load.o"
+  "$BUILD/src/ntos/ldr/ldr.o"
   "$BUILD/src/subsys/win32/win32k.o"
+  "$BUILD/src/subsys/win32/stubs.o"
   "$BUILD/arch/x86/hal.o"
   "$BUILD/arch/x86/video/vga.o"
   "$BUILD/arch/x86/video/svga.o"
