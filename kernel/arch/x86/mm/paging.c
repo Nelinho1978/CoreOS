@@ -107,3 +107,7 @@ void paging_init(uint32_t fb_phys, uint32_t fb_bytes) {
 
     g_paging_on = 1;
 }
+
+uint32_t *paging_get_page_directory(void) {
+    return g_pdir;
+}

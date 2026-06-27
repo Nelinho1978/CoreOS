@@ -74,6 +74,7 @@ compile_c src/core/memory.c
 compile_c src/core/boot_menu.c
 compile_c src/core/setup.c
 compile_c src/core/drivers_hw.c
+compile_c src/core/debug_console.c
 compile_c src/gui/fb.c
 compile_c src/gui/font8x16.c
 compile_c src/gui/boot_gfx.c
@@ -90,6 +91,7 @@ compile_c src/ntos/ex/exinit.c
 compile_c src/ntos/ob/ob.c
 compile_c src/ntos/io/iomgr.c
 compile_c src/ntos/io/ioinit.c
+compile_c src/ntos/io/fat32.c
 compile_c src/ntos/mm/mminit.c
 compile_c src/ntos/ps/psinit.c
 compile_c src/ntos/se/seinit.c
@@ -110,17 +112,20 @@ compile_c arch/x86/time/pit.c
 compile_c arch/x86/ke/gdt.c
 compile_c arch/x86/ke/syscall.c
 compile_c arch/x86/ke/irq.c
+compile_c arch/x86/ke/sched.c
 compile_c arch/x86/drivers/drvvga.c
 compile_c arch/x86/drivers/drvkbd.c
 compile_c arch/x86/drivers/drvmou.c
 compile_c arch/x86/drivers/e1000.c
 compile_c arch/x86/drivers/ac97.c
+compile_c arch/x86/drivers/ata_pio.c
 compile_c arch/x86/input/keyboard.c
 compile_c arch/x86/input/mouse.c
 compile_c arch/x86/usb/ohci.c
 compile_c arch/x86/usb/uhci.c
 compile_c arch/x86/usb/usb_stack.c
 compile_c arch/x86/mm/paging.c
+compile_c arch/x86/mm/vm.c
 
 echo "  AS  arch/x86/boot/stage2.S"
 nasm -f bin arch/x86/boot/stage2.S -o "$BUILD/stage2.bin"
@@ -130,6 +135,9 @@ nasm -f elf32 arch/x86/boot/boot.S -o "$BUILD/arch/x86/boot/boot.o"
 
 echo "  AS  arch/x86/ke/irq_asm.S"
 nasm -f elf32 arch/x86/ke/irq_asm.S -o "$BUILD/arch/x86/ke/irq_asm.o"
+
+echo "  AS  arch/x86/ke/sched_asm.S"
+nasm -f elf32 arch/x86/ke/sched_asm.S -o "$BUILD/arch/x86/ke/sched_asm.o"
 
 echo "  AS  arch/x86/boot/mbr.S"
 nasm -f bin arch/x86/boot/mbr.S -o "$BUILD/mbr.bin"
@@ -145,6 +153,7 @@ OBJS=(
   "$BUILD/src/core/boot_menu.o"
   "$BUILD/src/core/setup.o"
   "$BUILD/src/core/drivers_hw.o"
+  "$BUILD/src/core/debug_console.o"
   "$BUILD/src/gui/fb.o"
   "$BUILD/src/gui/font8x16.o"
   "$BUILD/src/gui/boot_gfx.o"
@@ -161,6 +170,7 @@ OBJS=(
   "$BUILD/src/ntos/ob/ob.o"
   "$BUILD/src/ntos/io/iomgr.o"
   "$BUILD/src/ntos/io/ioinit.o"
+  "$BUILD/src/ntos/io/fat32.o"
   "$BUILD/src/ntos/mm/mminit.o"
   "$BUILD/src/ntos/ps/psinit.o"
   "$BUILD/src/ntos/se/seinit.o"
@@ -181,18 +191,22 @@ OBJS=(
   "$BUILD/arch/x86/ke/gdt.o"
   "$BUILD/arch/x86/ke/syscall.o"
   "$BUILD/arch/x86/ke/irq.o"
+  "$BUILD/arch/x86/ke/sched_asm.o"
+  "$BUILD/arch/x86/ke/sched.o"
   "$BUILD/arch/x86/ke/irq_asm.o"
   "$BUILD/arch/x86/drivers/drvvga.o"
   "$BUILD/arch/x86/drivers/drvkbd.o"
   "$BUILD/arch/x86/drivers/drvmou.o"
   "$BUILD/arch/x86/drivers/e1000.o"
   "$BUILD/arch/x86/drivers/ac97.o"
+  "$BUILD/arch/x86/drivers/ata_pio.o"
   "$BUILD/arch/x86/input/keyboard.o"
   "$BUILD/arch/x86/input/mouse.o"
   "$BUILD/arch/x86/usb/ohci.o"
   "$BUILD/arch/x86/usb/uhci.o"
   "$BUILD/arch/x86/usb/usb_stack.o"
   "$BUILD/arch/x86/mm/paging.o"
+  "$BUILD/arch/x86/mm/vm.o"
 )
 
 echo "  LD  coreos-kernel.elf"

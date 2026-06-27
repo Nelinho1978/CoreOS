@@ -19,6 +19,7 @@ extern uint32_t ke_syscall_dispatch(uint32_t syscall_number, uint32_t arg0, uint
 #define SYSCALL_NT_FREE_LIBRARY     5
 #define SYSCALL_NT_VIRTUAL_ALLOC    6
 #define SYSCALL_NT_VIRTUAL_FREE     7
+#define SYSCALL_SCHED_YIELD         8
 
 uint32_t ke_syscall_dispatch(uint32_t syscall_number,
                               uint32_t arg0, uint32_t arg1, uint32_t arg2) {
@@ -115,6 +116,13 @@ uint32_t ke_syscall_dispatch(uint32_t syscall_number,
         extern void MmFreePool(void *ptr);
         void *ptr = (void *)arg0;
         MmFreePool(ptr);
+        return (uint32_t)STATUS_SUCCESS;
+    }
+
+    case SYSCALL_SCHED_YIELD: {
+        /* NtYieldExecution - yield to next thread */
+        extern void sched_switch(void);
+        sched_switch();
         return (uint32_t)STATUS_SUCCESS;
     }
 

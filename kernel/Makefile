@@ -23,6 +23,7 @@ CORE_SRC = \
 	src/core/boot_menu.c \
 	src/core/setup.c \
 	src/core/drivers_hw.c \
+	src/core/debug_console.c \
 	src/gui/fb.c \
 	src/gui/font8x16.c \
 	src/gui/boot_gfx.c \
@@ -39,6 +40,7 @@ CORE_SRC = \
 	src/ntos/ob/ob.c \
 	src/ntos/io/iomgr.c \
 	src/ntos/io/ioinit.c \
+	src/ntos/io/fat32.c \
 	src/ntos/mm/mminit.c \
 	src/ntos/ps/psinit.c \
 	src/ntos/se/seinit.c \
@@ -63,12 +65,12 @@ LDFLAGS = $(LDFLAGS_COMMON) -m elf_i386 -T arch/x86/linker.ld
 
 ARCH_SRC = arch/x86/hal.c arch/x86/video/vga.c arch/x86/video/svga.c arch/x86/video/bochs_svga.c arch/x86/cpu/cpuid.c \
 	arch/x86/mem/ram_probe.c arch/x86/bus/pci.c arch/x86/io/serial.c \
-	arch/x86/time/pit.c arch/x86/ke/gdt.c arch/x86/ke/syscall.c arch/x86/ke/irq.c \
+	arch/x86/time/pit.c arch/x86/ke/gdt.c arch/x86/ke/syscall.c arch/x86/ke/irq.c arch/x86/ke/sched.c \
 	arch/x86/drivers/drvvga.c arch/x86/drivers/drvkbd.c arch/x86/drivers/drvmou.c \
-	arch/x86/drivers/e1000.c arch/x86/drivers/ac97.c \
+	arch/x86/drivers/e1000.c arch/x86/drivers/ac97.c arch/x86/drivers/ata_pio.c \
 	arch/x86/input/keyboard.c arch/x86/input/mouse.c arch/x86/usb/ohci.c \
-	arch/x86/usb/uhci.c arch/x86/usb/usb_stack.c arch/x86/mm/paging.c
-ARCH_ASM = arch/x86/boot/boot.S arch/x86/ke/irq_asm.S
+	arch/x86/usb/uhci.c arch/x86/usb/usb_stack.c arch/x86/mm/paging.c arch/x86/mm/vm.c
+ARCH_ASM = arch/x86/boot/boot.S arch/x86/ke/irq_asm.S arch/x86/ke/sched_asm.S
 STAGE2_SRC = arch/x86/boot/stage2.S
 MBR_SRC = arch/x86/boot/mbr.S
 
@@ -157,13 +159,11 @@ run: disk
 	qemu-system-i386 \
 		-drive file=$(DISK_IMG),format=raw,index=0,if=ide \
 		-serial stdio \
-		-no-reboot
-
-dirs:
+		-no-reboot	dirs:
 	@mkdir -p $(BUILD_DIR)/src/core $(BUILD_DIR)/src/gui $(BUILD_DIR)/src/gfx $(BUILD_DIR)/src/hal
 	@mkdir -p $(BUILD_DIR)/src/ntos/ke $(BUILD_DIR)/src/ntos/ex $(BUILD_DIR)/src/ntos/ob
 	@mkdir -p $(BUILD_DIR)/src/ntos/io $(BUILD_DIR)/src/ntos/mm $(BUILD_DIR)/src/ntos/ps
-	@mkdir -p $(BUILD_DIR)/src/ntos/se $(BUILD_DIR)/src/ntos/cm $(BUILD_DIR)/src/subsys/win32
+	@mkdir -p $(BUILD_DIR)/src/ntos/se $(BUILD_DIR)/src/ntos/cm $(BUILD_DIR)/src/ntos/ldr $(BUILD_DIR)/src/subsys/win32
 	@mkdir -p $(BUILD_DIR)/arch/x86/boot $(BUILD_DIR)/arch/x86/video $(BUILD_DIR)/arch/x86/cpu
 	@mkdir -p $(BUILD_DIR)/arch/x86/time $(BUILD_DIR)/arch/x86/ke $(BUILD_DIR)/arch/x86/drivers
 	@mkdir -p $(BUILD_DIR)/arch/x86/input $(BUILD_DIR)/arch/x86/mm $(BUILD_DIR)/arch/x86/usb

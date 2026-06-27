@@ -31,3 +31,47 @@ void serial_puts(const char *s) {
         serial_putchar(*s++);
     }
 }
+
+int serial_data_available(void) {
+    return (inb(0x3F8u + 5) & 0x01u) != 0;
+}
+
+char serial_getchar(void) {
+    while (!serial_data_available()) {
+        __asm__ volatile("pause");
+    }
+    return (char)inb(0x3F8u);
+}
+
+int serial_getchar_nonblock(char *c) {
+    if (!serial_data_available()) {
+        return 0;
+    }
+    *c = (char)inb(0x3F8u);
+    return 1;
+}
+
+void serial_gets(char *buf, uint32_t max_len) {
+    uint32_t i = 0;
+    char c;
+
+    if (!buf || max_len == 0) return;
+
+    while (i < max_len - 1) {
+        c = serial_getchar();
+        if (c == '\r' || c == '\n') {
+            serial_puts("\r\n");
+            break;
+        }
+        if (c == '\b' || c == 0x7F) {
+            if (i > 0) {
+                --i;
+                serial_puts("\b \b");
+            }
+            continue;
+        }
+        buf[i++] = c;
+        serial_putchar(c);
+    }
+    buf[i] = '\0';
+}

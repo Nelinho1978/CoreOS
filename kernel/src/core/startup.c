@@ -5,20 +5,38 @@
 #include "ntos/ntoskrnl.h"
 #include "coreos/printk.h"
 #include "coreos/drivers_hw.h"
+#include "coreos/debug_console.h"
 #include "ntos/ldr.h"
 #include "subsys/win32_stubs.h"
 #include "arch/irq.h"
+#include "arch/vm.h"
+#include "arch/scheduler.h"
+#include "arch/ata.h"
+#include "arch/paging.h"
+
+/* External declarations for new features */
+extern int fat32_init(void);
+extern int fat32_list_root(void);
 
 void criar_memoria_virtual(uint32_t boot_magic, void *boot_info) {
     (void)boot_magic;
     (void)boot_info;
     kputs("[Kernel] CriarMemoriaVirtual\n");
-    /* Paginacao e mapa ja preparados em inicializar_video / MmInit */
+
+    /* Initialize the page tables (already done in paging_init) */
+    /* Now initialize the virtual memory manager with dynamic allocation */
+    vm_init();
+
+    /* Also initialize the debug serial console */
+    debug_console_init();
 }
 
 void criar_scheduler(void) {
     kputs("[Kernel] CriarScheduler\n");
     KeInitSystem();
+
+    /* Initialize the real preemptive scheduler */
+    sched_init();
 }
 
 void criar_drivers(void) {
@@ -26,6 +44,19 @@ void criar_drivers(void) {
     IoInitSystem();
     IoLoadBuiltinDrivers();
     drivers_inicializar_hardware();
+
+    /* Initialize ATA/IDE disk driver */
+    kputs("[Kernel] Inicializando disco...\n");
+    if (ata_init()) {
+        kputs("[Kernel] Disco ATA detectado\n");
+        /* Try to initialize FAT32 */
+        if (fat32_init()) {
+            kputs("[Kernel] FAT32 pronto\n");
+            fat32_list_root();
+        }
+    } else {
+        kputs("[Kernel] Disco ATA nao detectado\n");
+    }
 }
 
 void criar_processos(void) {
@@ -39,6 +70,12 @@ void criar_processos(void) {
     LdrInitSystem();
     Win32StubsInit();
     KePhase1Init();
+
+    /* Now that IDT is loaded, start the PIT timer for preemptive scheduling */
+    {
+        extern void pit_init_sched(uint32_t frequency_hz);
+        pit_init_sched(100);
+    }
 }
 
 void mostrar_tela(void) {
@@ -55,6 +92,7 @@ void mostrar_tela(void) {
     LdrLoadDll(NULL, "user32.dll");
     LdrLoadDll(NULL, "gdi32.dll");
 
+    /* Run the desktop */
     desktop_run();
 }
 

@@ -5,5 +5,6 @@
 
 void paging_init(uint32_t fb_phys, uint32_t fb_bytes);
 void paging_map_mmio(uint32_t phys, uint32_t bytes);
+uint32_t *paging_get_page_directory(void);
 
 #endif
