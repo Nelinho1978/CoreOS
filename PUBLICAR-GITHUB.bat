@@ -31,8 +31,9 @@ gh repo view CoreOS >nul 2>&1
 if errorlevel 1 (
     gh repo create CoreOS --public --source=. --remote=origin --description "Sistema operacional CoreOS com kernel NT, desktop grafico, USB e aceleracao grafica." --push
 ) else (
+    for /f "delims=" %%U in ('gh api user -q .login 2^>nul') do set "GHUSER=%%U"
     git remote get-url origin >nul 2>&1
-    if errorlevel 1 git remote add origin https://github.com/%USERNAME%/CoreOS.git
+    if errorlevel 1 git remote add origin https://github.com/%GHUSER%/CoreOS.git
     git push -u origin main
 )
 
