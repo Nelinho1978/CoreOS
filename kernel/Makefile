@@ -43,7 +43,10 @@ CORE_SRC = \
 	src/ntos/ps/psinit.c \
 	src/ntos/se/seinit.c \
 	src/ntos/cm/cminit.c \
-	src/subsys/win32/win32k.c
+	src/ntos/ldr/pe_load.c \
+	src/ntos/ldr/ldr.c \
+	src/subsys/win32/win32k.c \
+	src/subsys/win32/stubs.c
 
 .PHONY: all clean run disk iso dirs
 

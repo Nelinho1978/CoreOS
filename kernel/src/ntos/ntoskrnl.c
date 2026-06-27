@@ -1,5 +1,7 @@
 #include "ntos/ntoskrnl.h"
+#include "ntos/ldr.h"
 #include "subsys/win32.h"
+#include "subsys/win32_stubs.h"
 #include "coreos/printk.h"
 #include "hal/hal.h"
 
@@ -15,9 +17,20 @@ NTSTATUS NTAPI NtInitializeExecutive(uint32_t boot_magic, void *boot_info) {
     PspInitSystem();
     IoInitSystem();
     IoLoadBuiltinDrivers();
+    LdrInitSystem();
+    Win32StubsInit();
 
     hal_late_init();
     KePhase1Init();
+
+    /* Pre-load system DLL stubs */
+    {
+        extern void *LdrLoadDll(const char *path, const char *name);
+        LdrLoadDll(NULL, "ntdll.dll");
+        LdrLoadDll(NULL, "kernel32.dll");
+        LdrLoadDll(NULL, "user32.dll");
+        LdrLoadDll(NULL, "gdi32.dll");
+    }
 
     if (!NT_SUCCESS(Win32SubsystemInitialize())) {
         kputs("[NT] Falha ao iniciar subsistema Win32\n");

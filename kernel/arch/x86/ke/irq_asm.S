@@ -15,12 +15,16 @@ ke_irq_stub:
     iretd
 
 ke_syscall_stub:
+    ; Syscall via INT 0x2E
+    ; Parametros passados em: eax=numero, ebx=arg0, ecx=arg1, edx=arg2
+    ; (convencao padrao usada pelo user-mode para INT 0x2E)
     push ebp
     mov ebp, esp
-    push dword [ebp + 12]
-    push dword [ebp + 8]
-    push dword [ebp + 4]
+    push edx          ; arg2
+    push ecx          ; arg1
+    push ebx          ; arg0
+    push eax          ; syscall_number
     call ke_syscall_dispatch
-    add esp, 12
+    add esp, 16
     pop ebp
     iretd
