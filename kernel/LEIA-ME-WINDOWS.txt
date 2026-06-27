@@ -1,0 +1,50 @@
+================================================================================
+  CoreOS 95 - COMO COMPILAR NO WINDOWS
+================================================================================
+
+NAO clique duas vezes em build.ps1 !
+(O Windows abre o Notepad em vez de executar.)
+
+USE UM DESTES:
+
+  1. Duplo clique em:  COMPILAR.bat
+     -> Gera: build\x86\coreos.img
+
+  2. Duplo clique em:  GERAR-ISO.bat
+     -> Tenta gerar: build\x86\coreos.iso
+
+--------------------------------------------------------------------------------
+PRIMEIRA VEZ? Instale as ferramentas:
+--------------------------------------------------------------------------------
+
+1. Baixe e instale MSYS2:  https://www.msys2.org/
+
+2. Abra no menu Iniciar:  "MSYS2 MINGW32"
+
+3. Digite estes comandos:
+
+     pacman -Syu
+     pacman -S mingw-w64-i686-gcc nasm
+
+4. Adicione ao PATH do Windows:
+
+     C:\msys64\mingw32\bin
+
+   (Painel de Controle -> Sistema -> Configuracoes avancadas ->
+    Variaveis de ambiente -> Path -> Novo)
+
+5. Feche tudo e de duplo clique em COMPILAR.bat de novo.
+
+--------------------------------------------------------------------------------
+VIRTUALBOX
+--------------------------------------------------------------------------------
+
+1. Nova VM -> Other (32-bit) -> 32 MB RAM -> sem disco
+2. Configuracoes -> Armazenamento -> IDE -> Adicionar disco
+3. Escolha:  build\x86\coreos.img
+4. Sistema -> DESLIGUE o EFI
+5. Iniciar
+
+Guia completo: VIRTUALBOX.md
+
+================================================================================

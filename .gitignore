@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Kernel build artifacts
+kernel/build/
+
+# Toolchain i686-elf baixada no Windows
+kernel/tools/
+
+# Imagens de disco/VM locais
+*.vdi
+*.img
+*.iso
+
+# Logs de execucao
+kernel/build/x86/serial.log
+kernel/gcc-err.txt
+*.err.txt

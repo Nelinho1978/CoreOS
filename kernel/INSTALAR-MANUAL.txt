@@ -1,0 +1,65 @@
+================================================================================
+  INSTALACAO MANUAL DO COMPILADOR (se o download automatico falhar)
+================================================================================
+
+O arquivo tem cerca de 200 MB. O download pelo script pode falhar por
+antivirus, firewall ou conexao lenta. Use o navegador:
+
+PASSO 1 - Baixar no navegador
+-----------------------------
+Abra este link:
+
+  https://github.com/lordmilko/i686-elf-tools/releases/tag/7.1.0
+
+Clique em:  i686-elf-tools-windows.zip
+
+Aguarde o download terminar (~200 MB).
+
+
+PASSO 2 - Extrair
+-----------------
+1. Clique com botao direito no ZIP -> Extrair tudo
+2. Dentro do ZIP ha uma pasta com subpastas bin, lib, etc.
+3. Copie TODA essa pasta para:
+
+   C:\open-core-os\kernel\tools\i686-elf
+
+4. O caminho final deve ser:
+
+   C:\open-core-os\kernel\tools\i686-elf\bin\i686-elf-gcc.exe
+
+   (Se o ZIP ja extraiu para "i686-elf-tools", renomeie para "i686-elf"
+    ou ajuste o caminho para que bin\i686-elf-gcc.exe exista.)
+
+
+PASSO 3 - NASM (MSYS2)
+----------------------
+Abra "MSYS2 MINGW32" no menu Iniciar e execute:
+
+  pacman -S nasm
+
+
+PASSO 4 - Compilar
+------------------
+Duplo clique em:
+
+  C:\open-core-os\kernel\COMPILAR.bat
+
+Para gerar ISO (opcional, precisa cdrtools no MSYS2: pacman -S cdrtools):
+
+  C:\open-core-os\kernel\GERAR-ISO.bat
+
+
+PASSO 5 - VirtualBox
+--------------------
+Anexe como disco IDE:
+
+  C:\open-core-os\kernel\build\x86\coreos.img
+
+EFI desligado na VM.
+
+
+LINK ALTERNATIVO (versao mais nova, ~900 MB):
+  https://github.com/lordmilko/i686-elf-tools/releases/tag/15.2.0
+
+================================================================================
