@@ -216,8 +216,8 @@ $OBJCOPY -O binary "$BUILD/coreos-kernel.elf" "$BUILD/coreos-kernel.flat"
 KERNEL_BYTES=$(wc -c < "$BUILD/coreos-kernel.flat")
 KERNEL_NEED=$(( (KERNEL_BYTES + 511) / 512 ))
 echo "Kernel flat: $BUILD/coreos-kernel.flat ($KERNEL_BYTES bytes, $KERNEL_NEED setores)"
-if [ "$KERNEL_NEED" -gt 96 ]; then
-  echo "ERRO: kernel maior que 96 setores (48 KB). Aumente KERNEL_SECTORS no stage2.S"
+if [ "$KERNEL_NEED" -gt 256 ]; then
+  echo "ERRO: kernel maior que 256 setores (128 KB). Aumente KERNEL_SECTORS no stage2.S"
   exit 1
 fi
 

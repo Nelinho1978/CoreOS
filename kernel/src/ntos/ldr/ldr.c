@@ -1,6 +1,7 @@
 #include "ntos/ldr.h"
 #include "coreos/printk.h"
 #include "pe.h"
+#include "ntos/mm.h"
 
 /* ============================================================
  *  Ldr Module — Windows NT-style Dynamic Link Library Loader
@@ -72,6 +73,9 @@ static const char *ldr_base_name(const char *path) {
     }
     return last;
 }
+
+/* ---- FAT32 file loading ---- */
+extern int fat32_load_file(const char *name, void *buffer, uint32_t *size);
 
 /* -----------------------------------------------------------
  *  LdrInitSystem — Initialize the module loader.
@@ -187,22 +191,9 @@ void *LdrLoadDll(const char *dll_path, const char *dll_name) {
     kputs(name ? name : "(null)");
     kputs("\n");
 
-    /* ---- Stage 1: Attempt to load from built-in stubs ---- */
-    /* For now, we bypass file loading and use stub DLLs.
-     * File loading will be implemented when a VFS is available. */
+    /* ---- Stage 1: Check built-in stubs first ---- */
     {
-        /* Check if this DLL name matches a built-in stub */
-        void *stub_base = NULL;
-        static int stub_loaded_ntdll = 0;
-        static int stub_loaded_kernel32 = 0;
-        static int stub_loaded_user32 = 0;
-        static int stub_loaded_gdi32 = 0;
-
-        /* For now, we return a non-null handle for known DLLs
-         * and resolve functions via the stubs table. */
-
         if (ldr_stricmp(name, "ntdll.dll") == 0) {
-            stub_loaded_ntdll = 1;
             mod = ldr_find_free_slot();
             if (!mod) return NULL;
             mod->DllBase = (void *)0xB0000001;
@@ -218,9 +209,7 @@ void *LdrLoadDll(const char *dll_path, const char *dll_name) {
             kputs("[Ldr] NTDLL carregada (stub built-in)\n");
             return mod->DllBase;
         }
-
         if (ldr_stricmp(name, "kernel32.dll") == 0) {
-            stub_loaded_kernel32 = 1;
             mod = ldr_find_free_slot();
             if (!mod) return NULL;
             mod->DllBase = (void *)0xB0001001;
@@ -236,9 +225,7 @@ void *LdrLoadDll(const char *dll_path, const char *dll_name) {
             kputs("[Ldr] KERNEL32 carregada (stub built-in)\n");
             return mod->DllBase;
         }
-
         if (ldr_stricmp(name, "user32.dll") == 0) {
-            stub_loaded_user32 = 1;
             mod = ldr_find_free_slot();
             if (!mod) return NULL;
             mod->DllBase = (void *)0xB0020001;
@@ -254,9 +241,7 @@ void *LdrLoadDll(const char *dll_path, const char *dll_name) {
             kputs("[Ldr] USER32 carregada (stub built-in)\n");
             return mod->DllBase;
         }
-
         if (ldr_stricmp(name, "gdi32.dll") == 0) {
-            stub_loaded_gdi32 = 1;
             mod = ldr_find_free_slot();
             if (!mod) return NULL;
             mod->DllBase = (void *)0xB0030001;
@@ -272,13 +257,119 @@ void *LdrLoadDll(const char *dll_path, const char *dll_name) {
             kputs("[Ldr] GDI32 carregada (stub built-in)\n");
             return mod->DllBase;
         }
+    }
 
-        /* Unknown DLL — try to load file from disk */
-        kputs("[Ldr] DLL nao reconhecida: ");
+    /* ---- Stage 2: Try to load from disk via FAT32 ---- */
+    {
+        uint8_t *file_buf = NULL;
+        uint32_t file_size = 131072;  /* Max expected DLL size: 128KB */
+        void *image_base = NULL;
+        int ok = 0;
+
+        kputs("[Ldr] Tentando carregar do disco: ");
         kputs(name);
         kputs("\n");
-        return NULL;
+
+        /* Allocate file buffer from heap */
+        file_buf = MmAllocatePool(file_size);
+        if (!file_buf) {
+            kputs("[Ldr] Falha ao alocar buffer\n");
+            return NULL;
+        }
+
+        /* Try to load file — fat32_load_file sets file_size to actual size */
+        if (!fat32_load_file(name, file_buf, &file_size)) {
+            kputs("[Ldr] Arquivo nao encontrado no disco\n");
+            MmFreePool(file_buf);
+            return NULL;
+        }
+
+        kprintf("[Ldr] Arquivo lido: %u bytes\n", file_size);
+
+        /* Check PE magic */
+        if (!PeValidateImage(file_buf, file_size)) {
+            kputs("[Ldr] Falha: nao e um PE valido\n");
+            MmFreePool(file_buf);
+            return NULL;
+        }
+
+        /* Parse PE headers to get image size */
+        {
+            const IMAGE_DOS_HEADER *dos = (const IMAGE_DOS_HEADER *)file_buf;
+            const IMAGE_NT_HEADERS32 *nt = (const IMAGE_NT_HEADERS32 *)(file_buf + dos->e_lfanew);
+            uint32_t size_of_image = nt->OptionalHeader.SizeOfImage;
+            IMAGE_SECTION_HEADER sections[64];
+            uint16_t num_sections = 0;
+            IMAGE_NT_HEADERS32 nt_headers;
+
+            image_base = LdrAllocateImageMemory(size_of_image);
+            if (!image_base) {
+                kputs("[Ldr] Falha ao alocar memoria\n");
+                MmFreePool(file_buf);
+                return NULL;
+            }
+
+            /* Parse and load PE image */
+            if (!PeLoadImage(file_buf, file_size, image_base,
+                            &size_of_image, sections, &num_sections, &nt_headers)) {
+                kputs("[Ldr] Falha ao carregar PE\n");
+                LdrFreeImageMemory(image_base, size_of_image);
+                MmFreePool(file_buf);
+                return NULL;
+            }
+
+            /* Apply relocations */
+            PeProcessRelocations(image_base, &nt_headers, sections);
+
+            /* Resolve imports */
+            PeBuildImportTable(image_base, g_module_list, &nt_headers, sections);
+
+            /* Register module */
+            mod = ldr_find_free_slot();
+            if (!mod) {
+                LdrFreeImageMemory(image_base, size_of_image);
+                MmFreePool(file_buf);
+                return NULL;
+            }
+
+            mod->DllBase = image_base;
+            mod->ImageBase = nt_headers.OptionalHeader.ImageBase;
+            mod->SizeOfImage = size_of_image;
+            mod->EntryPoint = (void *)((uint8_t *)image_base +
+                                        nt_headers.OptionalHeader.AddressOfEntryPoint);
+            mod->LoadCount = 1;
+            mod->Flags = LDR_FLAGS_LOADED | LDR_FLAGS_IMAGE_DLL;
+            ldr_strcpy(mod->BaseDllName, name, sizeof(mod->BaseDllName));
+            {
+                uint32_t j;
+                for (j = 0; j < 127 && name[j]; ++j)
+                    mod->FullDllName[j] = name[j];
+                mod->FullDllName[127] = '\0';
+            }
+            mod->Next = NULL; mod->Prev = NULL;
+            g_module_count++;
+
+            /* Call DllMain(DLL_PROCESS_ATTACH) if entry point exists */
+            if (mod->EntryPoint) {
+                LdrCallDllEntry(mod->EntryPoint, image_base, 1, NULL);
+            }
+
+            ok = 1;
+        }
+
+        MmFreePool(file_buf);
+
+        if (ok) {
+            kputs("[Ldr] DLL carregada do disco\n");
+            return image_base;
+        }
     }
+
+    /* Unknown DLL — not found anywhere */
+    kputs("[Ldr] DLL nao encontrada: ");
+    kputs(name);
+    kputs("\n");
+    return NULL;
 }
 
 /* -----------------------------------------------------------

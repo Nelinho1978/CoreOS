@@ -127,8 +127,31 @@ void KeArchInitSystem(void) {
     kputs("[Ke/x86] arquitetura i386 detectada\n");
 }
 
+/* ---- PIC remapping (ICW2) ---- */
+/* Moves IRQ0-7 from INT 0x08-0x0F to INT 0x20-0x27 */
+/* Moves IRQ8-15 from INT 0x70-0x77 to INT 0x28-0x2F */
+static void pic_remap(void) {
+    uint8_t a1 = inb(0x21);
+    uint8_t a2 = inb(0xA1);
+
+    outb(0x20, 0x11);  /* ICW1: Initialize */
+    outb(0xA0, 0x11);
+    outb(0x21, 0x20);  /* ICW2: Master PIC vector offset = 0x20 */
+    outb(0xA1, 0x28);  /* ICW2: Slave PIC vector offset = 0x28 */
+    outb(0x21, 0x04);  /* ICW3: Master has slave at IRQ2 */
+    outb(0xA1, 0x02);  /* ICW3: Slave cascade identity */
+    outb(0x21, 0x01);  /* ICW4: x86 mode */
+    outb(0xA1, 0x01);
+
+    outb(0x21, a1);    /* Restore masks */
+    outb(0xA1, a2);
+
+    kputs("[PIC] Remapeado: IRQ0-7->INT 0x20-0x27\n");
+}
+
 void KeArchPhase1Init(void) {
     kputs("[Ke/x86] fase 1 — carregando GDT/IDT...\n");
+    pic_remap();  /* Remap PIC FIRST so IRQs don't hit INT 0x08-0x0F */
     KeLoadGdt();
     KeLoadIdt();
     ke_unmask_pit_irq();
