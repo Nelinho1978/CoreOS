@@ -22,6 +22,7 @@ CORE_SRC = \
 	src/core/memory.c \
 	src/core/boot_menu.c \
 	src/core/setup.c \
+	src/core/drivers_hw.c \
 	src/gui/fb.c \
 	src/gui/font8x16.c \
 	src/gui/boot_gfx.c \
@@ -61,6 +62,7 @@ ARCH_SRC = arch/x86/hal.c arch/x86/video/vga.c arch/x86/video/svga.c arch/x86/vi
 	arch/x86/mem/ram_probe.c arch/x86/bus/pci.c arch/x86/io/serial.c \
 	arch/x86/time/pit.c arch/x86/ke/gdt.c arch/x86/ke/syscall.c arch/x86/ke/irq.c \
 	arch/x86/drivers/drvvga.c arch/x86/drivers/drvkbd.c arch/x86/drivers/drvmou.c \
+	arch/x86/drivers/e1000.c arch/x86/drivers/ac97.c \
 	arch/x86/input/keyboard.c arch/x86/input/mouse.c arch/x86/usb/ohci.c \
 	arch/x86/usb/uhci.c arch/x86/usb/usb_stack.c arch/x86/mm/paging.c
 ARCH_ASM = arch/x86/boot/boot.S arch/x86/ke/irq_asm.S
